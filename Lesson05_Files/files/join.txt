@@ -1,0 +1,9 @@
+diyor 10
+obid 10.25
+sardor -5
+dilshod 48
+o'ktam 100
+alibek 200
+ 400
+ 500
+ 6000

@@ -1,0 +1,9 @@
+<user>
+    <id>7</id>
+    <username>diyor</username>
+    <password>123</password>
+    <subjects>
+        <subject>Java</subject>
+        <subject>Database</subject>
+    </subjects>
+</user>

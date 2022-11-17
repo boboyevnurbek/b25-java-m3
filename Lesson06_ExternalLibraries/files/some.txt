@@ -1,0 +1,6 @@
+1. Library search and download
+2. Library add to project
+3. Upload project to git
+4. Problem by library version
+
+Maven => automatic + build, deploy, ...

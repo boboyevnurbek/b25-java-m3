@@ -1,0 +1,17 @@
+Calendar (java.util),
+Date (java.util, java.sql)
+
+month: 0-11
+day of week: 1-sunday, ...
+
+calendar.getTime() => Date
+date.getTime() => long (millis)
+
+DateFormat, SimpleDateFormat (java.text)
+
+API = Application Programming Interface
+
+JAVA TIME API
+
+java.time
+java.time.format
