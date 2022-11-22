@@ -19,6 +19,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 
 public class AdminController {
     public static void handleMessage(Message message) {
@@ -85,9 +86,23 @@ public class AdminController {
 
             ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_CATEGORY_NAME_FOR_ADD);
         } else if (text.equals(ReplyKeyboardConstants.CATEGORY_EDIT)) {
-
+            if (Database.CATEGORY_LIST.isEmpty()) {
+                sendMessage.setText("No categories");
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            } else {
+                sendMessage.setText("Choose category for edit");
+                sendMessage.setReplyMarkup(InlineKeyboardUtil.getInlineMarkupByCategories(InlineKeyboardConstants.CATEGORY_EDIT_DATA));
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            }
         } else if (text.equals(ReplyKeyboardConstants.CATEGORY_DELETE)) {
-
+            if (Database.CATEGORY_LIST.isEmpty()) {
+                sendMessage.setText("No categories");
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            } else {
+                sendMessage.setText("Choose category for delete");
+                sendMessage.setReplyMarkup(InlineKeyboardUtil.getInlineMarkupByCategories(InlineKeyboardConstants.CATEGORY_DELETE_DATA));
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            }
         } else if (text.equals(ReplyKeyboardConstants.CATEGORY_LIST)) {
             if (Database.CATEGORY_LIST.isEmpty()) {
                 sendMessage.setText("No categories");
@@ -118,6 +133,15 @@ public class AdminController {
                     ComponentContainer.MY_BOT.sendMsg(sendMessage);
 
                     ComponentContainer.adminStatusMap.remove(chatId);
+                }else if (adminStatus.equals(AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT)) {
+                    String response = CategoryService.editCategory(text,
+                            (Integer)ComponentContainer.adminObjectMap.get(chatId));
+                    sendMessage.setText(response);
+                    sendMessage.setReplyMarkup(ReplyKeyboardUtil.getCategoryCRUDMenu());
+                    ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                    ComponentContainer.adminStatusMap.remove(chatId);
+                    ComponentContainer.adminObjectMap.remove(chatId);
                 }
             }
         }
@@ -133,27 +157,65 @@ public class AdminController {
         DeleteMessage deleteMessage = new DeleteMessage(chatId, message.getMessageId());
         ComponentContainer.MY_BOT.sendMsg(deleteMessage);
 
-        SendDocument sendDocument = new SendDocument();
-        sendDocument.setChatId(chatId);
+        if (List.of(InlineKeyboardConstants.CATEGORY_PDF_DATA,
+                InlineKeyboardConstants.CATEGORY_WORD_DATA,
+                InlineKeyboardConstants.CATEGORY_EXCEL_DATA).contains(data)) {
 
-        File file = null;
+            SendDocument sendDocument = new SendDocument();
+            sendDocument.setChatId(chatId);
 
-        if (data.equals(InlineKeyboardConstants.CATEGORY_PDF_DATA)) {
-            file = WorkWithFiles.getCategoriesWithPDF();
-        } else if (data.equals(InlineKeyboardConstants.CATEGORY_WORD_DATA)) {
-            // todo
-        } else if (data.equals(InlineKeyboardConstants.CATEGORY_EXCEL_DATA)) {
-            // todo
-        }
+            File file = null;
 
-        if (file != null) {
-            sendDocument.setDocument(new InputFile(file));
-            ComponentContainer.MY_BOT.sendMsg(sendDocument);
-        }else{
-            SendMessage sendMessage = new SendMessage(chatId, "Some exception");
+            if (data.equals(InlineKeyboardConstants.CATEGORY_PDF_DATA)) {
+                file = WorkWithFiles.getCategoriesWithPDF();
+            } else if (data.equals(InlineKeyboardConstants.CATEGORY_WORD_DATA)) {
+                // todo
+            } else if (data.equals(InlineKeyboardConstants.CATEGORY_EXCEL_DATA)) {
+                // todo
+            }
+
+            if (file != null) {
+                sendDocument.setDocument(new InputFile(file));
+                ComponentContainer.MY_BOT.sendMsg(sendDocument);
+            } else {
+                SendMessage sendMessage = new SendMessage(chatId, "Some exception");
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            }
+
+        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_DELETE_DATA)) {
+            Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+            boolean removeIf = Database.CATEGORY_LIST
+                    .removeIf(category -> category.getId().equals(categoryId));
+
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(chatId);
+            sendMessage.setText(removeIf ? "Category deleted" : "Category not found");
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_EDIT_DATA)) {
+            Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+            Optional<Category> categoryOptional = Database.CATEGORY_LIST.stream()
+                    .filter(category -> category.getId().equals(categoryId))
+                    .findFirst();
+
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(chatId);
+
+            if(categoryOptional.isPresent()){
+                sendMessage.setText("Enter new name");
+                sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
+
+                ComponentContainer.adminObjectMap.put(chatId, categoryId);
+                ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT);
+
+            }else{
+                sendMessage.setText("Category not found");
+            }
+
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
         }
-
 
     }
 }

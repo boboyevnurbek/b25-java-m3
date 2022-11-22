@@ -1,9 +1,12 @@
 package com.company.util;
 
+import com.company.db.Database;
+import com.company.entity.Category;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InlineKeyboardUtil {
@@ -27,5 +30,17 @@ public class InlineKeyboardUtil {
         InlineKeyboardButton button = new InlineKeyboardButton(demo);
         button.setCallbackData(callbackData);
         return button;
+    }
+
+    public static ReplyKeyboard getInlineMarkupByCategories(String why) {
+        // why = {CATEGORY_DELETE_DATA | CATEGORY_EDIT_DATA}
+
+        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+
+        for (Category category : Database.CATEGORY_LIST) {
+            rowList.add (List.of(getButton(category.getName(), why+"/"+category.getId())));
+        }
+
+        return new InlineKeyboardMarkup(rowList);
     }
 }

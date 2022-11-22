@@ -15,4 +15,8 @@ public interface ComponentContainer {
 
     // chat id, admin status
     Map<String, AdminStatus> adminStatusMap = new HashMap<>();
+
+    // chat id, object
+    Map<String, Object> adminObjectMap = new HashMap<>();
+
 }
