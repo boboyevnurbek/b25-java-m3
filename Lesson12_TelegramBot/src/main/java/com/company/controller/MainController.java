@@ -1,10 +1,11 @@
 package com.company.controller;
 
 import com.company.container.ComponentContainer;
-import org.telegram.telegrambots.meta.api.objects.Contact;
-import org.telegram.telegrambots.meta.api.objects.Location;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.PhotoSize;
+import com.company.service.CustomerService;
+import com.company.util.ReplyKeyboardConstants;
+import com.company.util.ReplyKeyboardUtil;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.*;
 
 import java.util.List;
 
@@ -60,9 +61,29 @@ public class MainController {
         String chatId = String.valueOf(message.getChatId());
         String text = message.getText();
 
-        System.out.println("chatId = " + chatId);
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
 
+        User user = message.getFrom();
 
+        if(text.equals("/start")){
+
+            CustomerService.addCustomerByChatId(chatId);
+
+            sendMessage.setText("Welcome, "+user.getFirstName());
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getUserMenu());
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+        }else if(text.equals(ReplyKeyboardConstants.USER_MENU_DEMO)){
+
+        }else if(text.equals(ReplyKeyboardConstants.BASKET_DEMO)){
+
+        }
+        else if(text.equals(ReplyKeyboardConstants.MY_ORDERS_DEMO)){
+            // todo
+        }
+        else if(text.equals(ReplyKeyboardConstants.CONTACT_WITH_ADMIN)){
+            // todo
+        }
     }
 
     public static void handleCallback(Message message, String data) {

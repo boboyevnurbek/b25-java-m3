@@ -1,6 +1,7 @@
 package com.company.db;
 
 import com.company.entity.Category;
+import com.company.entity.Customer;
 import com.company.entity.Product;
 import com.company.service.CategoryService;
 import com.company.service.ProductService;
@@ -11,6 +12,7 @@ import java.util.List;
 public interface Database {
     List<Category> CATEGORY_LIST = new ArrayList<>();
     List<Product> PRODUCT_LIST = new ArrayList<>();
+    List<Customer> CUSTOMER_LIST = new ArrayList<>();
 
     static void loadData(){
         CategoryService.addCategory("Tv");

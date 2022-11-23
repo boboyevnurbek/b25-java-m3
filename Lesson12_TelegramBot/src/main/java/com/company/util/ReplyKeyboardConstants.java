@@ -3,6 +3,7 @@ package com.company.util;
 public interface ReplyKeyboardConstants {
     String CATEGORY_DEMO = "Category CRUD";
     String PRODUCT_DEMO = "Product CRUD";
+    String ADVERT_DEMO = "SHARE ADVERT";
 
     String CATEGORY_ADD = "ADD CATEGORY";
     String CATEGORY_EDIT = "EDIT CATEGORY";
@@ -15,4 +16,8 @@ public interface ReplyKeyboardConstants {
     String PRODUCT_DELETE = "DELETE PRODUCT";
     String PRODUCT_LIST = "SHOW PRODUCT LIST";
 
+    String USER_MENU_DEMO = "MENU";
+    String BASKET_DEMO = "MY BASKET";
+    String MY_ORDERS_DEMO = "MY ORDERS";
+    String CONTACT_WITH_ADMIN = "CONTACT WITH ADMIN";
 }

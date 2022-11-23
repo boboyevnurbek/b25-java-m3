@@ -10,10 +10,15 @@ import java.util.List;
 public class ReplyKeyboardUtil {
     public static ReplyKeyboard getAdminMenu() {
 
-        return getMarkup(getRowList(getRow(
+        return getMarkup(getRowList(
+                getRow(
                 getButton(ReplyKeyboardConstants.CATEGORY_DEMO),
                 getButton(ReplyKeyboardConstants.PRODUCT_DEMO)
-        )));
+        ),
+                getRow(
+                        getButton(ReplyKeyboardConstants.ADVERT_DEMO)
+                )
+        ));
     }
 
     private static ReplyKeyboard getMarkup(List<KeyboardRow> rowList) {
@@ -64,6 +69,21 @@ public class ReplyKeyboardUtil {
                 ),
                 getRow(
                         getButton(ReplyKeyboardConstants.BACK_TO_BASE_MENU)
+                )
+        ));
+    }
+
+    public static ReplyKeyboard getUserMenu() {
+        return getMarkup(getRowList(
+                getRow(
+                        getButton(ReplyKeyboardConstants.USER_MENU_DEMO),
+                        getButton(ReplyKeyboardConstants.BASKET_DEMO)
+                ),
+                getRow(
+                        getButton(ReplyKeyboardConstants.MY_ORDERS_DEMO)
+                ),
+                getRow(
+                        getButton(ReplyKeyboardConstants.CONTACT_WITH_ADMIN)
                 )
         ));
     }

@@ -3,6 +3,7 @@ package com.company.controller;
 import com.company.container.ComponentContainer;
 import com.company.db.Database;
 import com.company.entity.Category;
+import com.company.entity.Customer;
 import com.company.entity.Product;
 import com.company.enums.AdminStatus;
 import com.company.files.WorkWithFiles;
@@ -12,6 +13,7 @@ import com.company.util.InlineKeyboardConstants;
 import com.company.util.InlineKeyboardUtil;
 import com.company.util.ReplyKeyboardConstants;
 import com.company.util.ReplyKeyboardUtil;
+import org.telegram.telegrambots.meta.api.methods.ForwardMessage;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -27,6 +29,28 @@ import java.util.Optional;
 
 public class AdminController {
     public static void handleMessage(Message message) {
+
+        String chatId = String.valueOf(message.getChatId());
+
+        if (ComponentContainer.adminStatusMap.containsKey(chatId)) {
+            AdminStatus adminStatus = ComponentContainer.adminStatusMap.get(chatId);
+
+            if (adminStatus.equals(AdminStatus.SHARE_ADVERT)) {
+
+                for (Customer customer : Database.CUSTOMER_LIST) {
+                    ForwardMessage forwardMessage = new ForwardMessage(customer.getChatId(),chatId, message.getMessageId());
+                    forwardMessage.setProtectContent(true);
+                    ComponentContainer.MY_BOT.sendMsg(forwardMessage);
+                }
+
+                SendMessage sendMessage = new SendMessage(chatId, "Advert shared");
+                sendMessage.setReplyMarkup(ReplyKeyboardUtil.getAdminMenu());
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                ComponentContainer.adminStatusMap.remove(chatId);
+                return;
+            }
+        }
 
         if (message.hasText()) {
             handleText(message);
@@ -53,25 +77,20 @@ public class AdminController {
         String fileId = photoSizeList.get(photoSizeList.size() - 1).getFileId();
         System.out.println("fileId = " + fileId);
 
-        if(ComponentContainer.adminStatusMap.containsKey(chatId)){
+        if (ComponentContainer.adminStatusMap.containsKey(chatId)) {
             AdminStatus adminStatus = ComponentContainer.adminStatusMap.get(chatId);
 
-            if(adminStatus.equals(AdminStatus.SEND_PRODUCT_IMAGE_FOR_ADD)){
+            if (adminStatus.equals(AdminStatus.SEND_PRODUCT_IMAGE_FOR_ADD)) {
 
                 Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
                 product.setImageUrl(fileId);
 
-                Category category = CategoryService.getCategoryById(product.getCategoryId());
+                String productDetail = product.detailInfo();
 
-                StringBuilder sb = new StringBuilder();
-                sb.append("<b>Category: </b>").append(category.getName()).append("\n");
-                sb.append("<b>Product: </b>").append(product.getName()).append("\n");
-                sb.append("<b>Price: </b>").append(product.getPrice()).append("\n");
-                sb.append("<b>Description: </b>").append(product.getDescription()).append("\n");
-                sb.append("<b>Save product to database:</b>");
+                productDetail += "\n\n" + "Do you want to save product?";
 
                 SendPhoto sendPhoto = new SendPhoto(chatId, new InputFile(fileId));
-                sendPhoto.setCaption(sb.toString());
+                sendPhoto.setCaption(productDetail);
                 sendPhoto.setReplyMarkup(InlineKeyboardUtil.getCommitOrCancelMenuForProduct());
 
                 sendPhoto.setParseMode(ParseMode.HTML);
@@ -115,6 +134,12 @@ public class AdminController {
             sendMessage.setText("Choose operation:");
             sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
+        } else if (text.equals(ReplyKeyboardConstants.ADVERT_DEMO)) {
+            sendMessage.setText("Send advert:");
+            sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.adminStatusMap.put(chatId, AdminStatus.SHARE_ADVERT);
         } else if (text.equals(ReplyKeyboardConstants.CATEGORY_ADD)) {
             sendMessage.setText("Enter category name:");
             sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
@@ -180,13 +205,18 @@ public class AdminController {
                 sendMessage.setText("No products");
                 ComponentContainer.MY_BOT.sendMsg(sendMessage);
             } else {
-                String reduce = Database.PRODUCT_LIST.stream()
-                        .map(Product::toString)
-                        .reduce("", (s, s2) -> s + "\n" + s2);
+//                String reduce = Database.PRODUCT_LIST.stream()
+//                        .map(Product::toString)
+//                        .reduce("", (s, s2) -> s + "\n" + s2);
+//
+//                sendMessage.setText(reduce);
+//                ComponentContainer.MY_BOT.sendMsg(sendMessage);
 
-                sendMessage.setText(reduce);
-                ComponentContainer.MY_BOT.sendMsg(sendMessage);
-
+                for (Product product : Database.PRODUCT_LIST) {
+                    SendPhoto sendPhoto = new SendPhoto(chatId, new InputFile(product.getImageUrl()));
+                    sendPhoto.setCaption(product.detailInfo());
+                    ComponentContainer.MY_BOT.sendMsg(sendPhoto);
+                }
             }
 
         } else {
@@ -333,7 +363,7 @@ public class AdminController {
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
 
             ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_NAME_FOR_ADD);
-        }else if(data.equals(InlineKeyboardConstants.PRODUCT_COMMIT_DATA)){
+        } else if (data.equals(InlineKeyboardConstants.PRODUCT_COMMIT_DATA)) {
 
             Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
             String response = ProductService.addProduct(product);
@@ -345,7 +375,7 @@ public class AdminController {
             ComponentContainer.adminStatusMap.remove(chatId);
             ComponentContainer.adminObjectMap.remove(chatId);
 
-        }else if(data.equals(InlineKeyboardConstants.PRODUCT_CANCEL_DATA)){
+        } else if (data.equals(InlineKeyboardConstants.PRODUCT_CANCEL_DATA)) {
             SendMessage sendMessage = new SendMessage(chatId, "Operation canceled");
             sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
