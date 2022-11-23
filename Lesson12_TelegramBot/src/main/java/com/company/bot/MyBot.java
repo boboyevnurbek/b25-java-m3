@@ -45,7 +45,7 @@ public class MyBot extends TelegramLongPollingBot {
     public void sendMsg(Object obj) {
         try {
             if (obj instanceof SendMessage sendMessage) {
-                execute(sendMessage);
+                Message message = execute(sendMessage);
             }
             else if (obj instanceof EditMessageText editMessageText) {
                 execute(editMessageText);

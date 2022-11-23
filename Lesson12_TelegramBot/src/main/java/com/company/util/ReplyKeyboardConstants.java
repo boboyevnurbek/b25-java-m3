@@ -8,5 +8,11 @@ public interface ReplyKeyboardConstants {
     String CATEGORY_EDIT = "EDIT CATEGORY";
     String CATEGORY_DELETE = "DELETE CATEGORY";
     String CATEGORY_LIST = "SHOW CATEGORY LIST";
-    String BACK_FROM_CATEGORY_MENU = "<- BACK";
+    String BACK_TO_BASE_MENU = "BACK TO HOME";
+
+    String PRODUCT_ADD = "ADD PRODUCT";
+    String PRODUCT_EDIT = "EDIT PRODUCT";
+    String PRODUCT_DELETE = "DELETE PRODUCT";
+    String PRODUCT_LIST = "SHOW PRODUCT LIST";
+
 }

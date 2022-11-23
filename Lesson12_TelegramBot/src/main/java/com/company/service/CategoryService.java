@@ -60,4 +60,11 @@ public class CategoryService {
 
         return "Category edited.";
     }
+
+    public static Category getCategoryById(Integer categoryId) {
+        return Database.CATEGORY_LIST.stream()
+                .filter(category -> category.getId().equals(categoryId))
+                .findFirst()
+                .orElse(null);
+    }
 }

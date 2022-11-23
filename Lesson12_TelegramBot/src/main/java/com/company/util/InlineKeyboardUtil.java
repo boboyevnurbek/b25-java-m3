@@ -43,4 +43,17 @@ public class InlineKeyboardUtil {
 
         return new InlineKeyboardMarkup(rowList);
     }
+
+    public static InlineKeyboardMarkup getCommitOrCancelMenuForProduct() {
+        InlineKeyboardButton button1 = getButton(
+                InlineKeyboardConstants.PRODUCT_COMMIT_DEMO, InlineKeyboardConstants.PRODUCT_COMMIT_DATA);
+        InlineKeyboardButton button2 = getButton(
+                InlineKeyboardConstants.PRODUCT_CANCEL_DEMO, InlineKeyboardConstants.PRODUCT_CANCEL_DATA);
+
+        List<InlineKeyboardButton> row = List.of(button1, button2);
+
+        List<List<InlineKeyboardButton>> rowList = List.of(row);
+
+        return new InlineKeyboardMarkup(rowList);
+    }
 }

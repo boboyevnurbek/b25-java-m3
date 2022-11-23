@@ -18,5 +18,4 @@ public interface ComponentContainer {
 
     // chat id, object
     Map<String, Object> adminObjectMap = new HashMap<>();
-
 }

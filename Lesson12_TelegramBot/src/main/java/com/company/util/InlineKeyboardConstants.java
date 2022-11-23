@@ -12,4 +12,11 @@ public interface InlineKeyboardConstants {
 
     String CATEGORY_EDIT_DATA = "for_category_edit_";
     String CATEGORY_DELETE_DATA = "for_category_delete_";
+    String CATEGORY_ADD_PRODUCT_DATA = "for_category_add_product_";
+
+    String PRODUCT_COMMIT_DEMO = "Yes";
+    String PRODUCT_COMMIT_DATA = "_commit_add_product_";
+
+    String PRODUCT_CANCEL_DEMO = "No";
+    String PRODUCT_CANCEL_DATA = "_cancel_add_product_";
 }

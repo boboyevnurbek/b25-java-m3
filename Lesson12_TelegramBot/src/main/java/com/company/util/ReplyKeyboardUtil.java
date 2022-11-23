@@ -47,7 +47,23 @@ public class ReplyKeyboardUtil {
                         getButton(ReplyKeyboardConstants.CATEGORY_LIST)
                 ),
                 getRow(
-                        getButton(ReplyKeyboardConstants.BACK_FROM_CATEGORY_MENU)
+                        getButton(ReplyKeyboardConstants.BACK_TO_BASE_MENU)
+                )
+        ));
+    }
+
+    public static ReplyKeyboard getProductCRUDMenu() {
+        return getMarkup(getRowList(
+                getRow(
+                        getButton(ReplyKeyboardConstants.PRODUCT_ADD),
+                        getButton(ReplyKeyboardConstants.PRODUCT_EDIT)
+                ),
+                getRow(
+                        getButton(ReplyKeyboardConstants.PRODUCT_DELETE),
+                        getButton(ReplyKeyboardConstants.PRODUCT_LIST)
+                ),
+                getRow(
+                        getButton(ReplyKeyboardConstants.BACK_TO_BASE_MENU)
                 )
         ));
     }

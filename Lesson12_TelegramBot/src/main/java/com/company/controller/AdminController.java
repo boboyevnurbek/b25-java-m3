@@ -3,15 +3,19 @@ package com.company.controller;
 import com.company.container.ComponentContainer;
 import com.company.db.Database;
 import com.company.entity.Category;
+import com.company.entity.Product;
 import com.company.enums.AdminStatus;
 import com.company.files.WorkWithFiles;
 import com.company.service.CategoryService;
+import com.company.service.ProductService;
 import com.company.util.InlineKeyboardConstants;
 import com.company.util.InlineKeyboardUtil;
 import com.company.util.ReplyKeyboardConstants;
 import com.company.util.ReplyKeyboardUtil;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
@@ -46,6 +50,36 @@ public class AdminController {
         String chatId = String.valueOf(message.getChatId());
         List<PhotoSize> photoSizeList = message.getPhoto();
 
+        String fileId = photoSizeList.get(photoSizeList.size() - 1).getFileId();
+        System.out.println("fileId = " + fileId);
+
+        if(ComponentContainer.adminStatusMap.containsKey(chatId)){
+            AdminStatus adminStatus = ComponentContainer.adminStatusMap.get(chatId);
+
+            if(adminStatus.equals(AdminStatus.SEND_PRODUCT_IMAGE_FOR_ADD)){
+
+                Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                product.setImageUrl(fileId);
+
+                Category category = CategoryService.getCategoryById(product.getCategoryId());
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("<b>Category: </b>").append(category.getName()).append("\n");
+                sb.append("<b>Product: </b>").append(product.getName()).append("\n");
+                sb.append("<b>Price: </b>").append(product.getPrice()).append("\n");
+                sb.append("<b>Description: </b>").append(product.getDescription()).append("\n");
+                sb.append("<b>Save product to database:</b>");
+
+                SendPhoto sendPhoto = new SendPhoto(chatId, new InputFile(fileId));
+                sendPhoto.setCaption(sb.toString());
+                sendPhoto.setReplyMarkup(InlineKeyboardUtil.getCommitOrCancelMenuForProduct());
+
+                sendPhoto.setParseMode(ParseMode.HTML);
+
+                ComponentContainer.MY_BOT.sendMsg(sendPhoto);
+            }
+        }
+
 
     }
 
@@ -78,7 +112,9 @@ public class AdminController {
             sendMessage.setReplyMarkup(ReplyKeyboardUtil.getCategoryCRUDMenu());
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
         } else if (text.equals(ReplyKeyboardConstants.PRODUCT_DEMO)) {
-
+            sendMessage.setText("Choose operation:");
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
         } else if (text.equals(ReplyKeyboardConstants.CATEGORY_ADD)) {
             sendMessage.setText("Enter category name:");
             sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
@@ -120,7 +156,38 @@ public class AdminController {
                 sendMessage.setReplyMarkup(InlineKeyboardUtil.getFileMenuForCategory());
                 ComponentContainer.MY_BOT.sendMsg(sendMessage);
             }
-        } else if (text.equals(ReplyKeyboardConstants.BACK_FROM_CATEGORY_MENU)) {
+        } else if (text.equals(ReplyKeyboardConstants.BACK_TO_BASE_MENU)) {
+            sendMessage.setText("...");
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getAdminMenu());
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+        } else if (text.equals(ReplyKeyboardConstants.PRODUCT_ADD)) {
+            sendMessage.setText("...");
+            sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            sendMessage.setText("Choose category:");
+            sendMessage.setReplyMarkup(InlineKeyboardUtil.getInlineMarkupByCategories(
+                    InlineKeyboardConstants.CATEGORY_ADD_PRODUCT_DATA));
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.adminObjectMap.put(chatId, new Product());
+        } else if (text.equals(ReplyKeyboardConstants.PRODUCT_EDIT)) {
+
+        } else if (text.equals(ReplyKeyboardConstants.PRODUCT_DELETE)) {
+
+        } else if (text.equals(ReplyKeyboardConstants.PRODUCT_LIST)) {
+            if (Database.PRODUCT_LIST.isEmpty()) {
+                sendMessage.setText("No products");
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            } else {
+                String reduce = Database.PRODUCT_LIST.stream()
+                        .map(Product::toString)
+                        .reduce("", (s, s2) -> s + "\n" + s2);
+
+                sendMessage.setText(reduce);
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            }
 
         } else {
             if (ComponentContainer.adminStatusMap.containsKey(chatId)) {
@@ -133,15 +200,54 @@ public class AdminController {
                     ComponentContainer.MY_BOT.sendMsg(sendMessage);
 
                     ComponentContainer.adminStatusMap.remove(chatId);
-                }else if (adminStatus.equals(AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT)) {
+                } else if (adminStatus.equals(AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT)) {
                     String response = CategoryService.editCategory(text,
-                            (Integer)ComponentContainer.adminObjectMap.get(chatId));
+                            (Integer) ComponentContainer.adminObjectMap.get(chatId));
                     sendMessage.setText(response);
                     sendMessage.setReplyMarkup(ReplyKeyboardUtil.getCategoryCRUDMenu());
                     ComponentContainer.MY_BOT.sendMsg(sendMessage);
 
                     ComponentContainer.adminStatusMap.remove(chatId);
                     ComponentContainer.adminObjectMap.remove(chatId);
+                } else if (adminStatus.equals(AdminStatus.ENTER_PRODUCT_NAME_FOR_ADD)) {
+                    Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                    product.setName(text);
+
+                    sendMessage.setText("Enter product price:");
+                    ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                    ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_PRICE_FOR_ADD);
+                } else if (adminStatus.equals(AdminStatus.ENTER_PRODUCT_PRICE_FOR_ADD)) {
+
+                    double price = -5;
+
+                    try {
+                        price = Double.parseDouble(text);
+                    } catch (Exception e) {
+
+                    }
+
+                    if (price < 0) {
+                        sendMessage.setText("Wrong price. Try again");
+                    } else {
+                        Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                        product.setPrice(price);
+
+                        sendMessage.setText("Product description");
+                        ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_DESCRITION_FOR_ADD);
+                    }
+
+                    ComponentContainer.MY_BOT.sendMsg(sendMessage);
+                } else if (adminStatus.equals(AdminStatus.ENTER_PRODUCT_DESCRITION_FOR_ADD)) {
+                    Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                    product.setDescription(text);
+
+                    System.out.println("product = " + product);
+
+                    sendMessage.setText("Send product image:");
+                    ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                    ComponentContainer.adminStatusMap.put(chatId, AdminStatus.SEND_PRODUCT_IMAGE_FOR_ADD);
                 }
             }
         }
@@ -203,18 +309,49 @@ public class AdminController {
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(chatId);
 
-            if(categoryOptional.isPresent()){
+            if (categoryOptional.isPresent()) {
                 sendMessage.setText("Enter new name");
                 sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
 
                 ComponentContainer.adminObjectMap.put(chatId, categoryId);
                 ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT);
 
-            }else{
+            } else {
                 sendMessage.setText("Category not found");
             }
 
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
+        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_ADD_PRODUCT_DATA)) {
+            Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+            Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+            product.setCategoryId(categoryId);
+
+            System.out.println("product = " + product);
+
+            SendMessage sendMessage = new SendMessage(chatId, "Enter product name:");
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_NAME_FOR_ADD);
+        }else if(data.equals(InlineKeyboardConstants.PRODUCT_COMMIT_DATA)){
+
+            Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+            String response = ProductService.addProduct(product);
+
+            SendMessage sendMessage = new SendMessage(chatId, response);
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.adminStatusMap.remove(chatId);
+            ComponentContainer.adminObjectMap.remove(chatId);
+
+        }else if(data.equals(InlineKeyboardConstants.PRODUCT_CANCEL_DATA)){
+            SendMessage sendMessage = new SendMessage(chatId, "Operation canceled");
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.adminStatusMap.remove(chatId);
+            ComponentContainer.adminObjectMap.remove(chatId);
         }
 
     }
