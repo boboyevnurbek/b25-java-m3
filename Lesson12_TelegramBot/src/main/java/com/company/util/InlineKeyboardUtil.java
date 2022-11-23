@@ -1,7 +1,11 @@
 package com.company.util;
 
 import com.company.db.Database;
+import com.company.entity.BasketDetail;
 import com.company.entity.Category;
+import com.company.entity.Product;
+import com.company.service.BasketDetailService;
+import com.company.service.ProductService;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -33,7 +37,7 @@ public class InlineKeyboardUtil {
     }
 
     public static ReplyKeyboard getInlineMarkupByCategories(String why) {
-        // why = {CATEGORY_DELETE_DATA | CATEGORY_EDIT_DATA}
+        // why = {CATEGORY_DELETE_DATA | CATEGORY_EDIT_DATA | CATEGORY_ADD_PRODUCT_DATA}
 
         List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
 
@@ -53,6 +57,63 @@ public class InlineKeyboardUtil {
         List<InlineKeyboardButton> row = List.of(button1, button2);
 
         List<List<InlineKeyboardButton>> rowList = List.of(row);
+
+        return new InlineKeyboardMarkup(rowList);
+    }
+
+    public static InlineKeyboardMarkup getInlineMarkupByProducts(String why, List<Product> productList) {
+        // why = {PRODUCT_ORDER_DATA | ...}
+
+        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+
+        for (Product product : productList) {
+            rowList.add (List.of(getButton(product.getName(), why+"/"+product.getId())));
+        }
+
+        return new InlineKeyboardMarkup(rowList);
+    }
+
+    public static InlineKeyboardMarkup getProductCountMenu(Integer productId, int productQuantity) {
+        InlineKeyboardButton buttonMinus = getButton(
+                " - ", InlineKeyboardConstants.PRODUCT_QUANTITY_DATA+"/"+productQuantity+"/-1"+"/"+productId);
+        InlineKeyboardButton buttonQuantity = getButton(
+                String.valueOf(productQuantity), "QWERTYUIOQWERTYUIO");
+        InlineKeyboardButton buttonPlus = getButton(
+                " + ", InlineKeyboardConstants.PRODUCT_QUANTITY_DATA+"/"+productQuantity+"/1"+"/"+productId);
+        InlineKeyboardButton button = getButton(
+                InlineKeyboardConstants.PRODUCT_QUANTITY_BASKET_DEMO,
+                InlineKeyboardConstants.PRODUCT_QUANTITY_BASKET_DATA + "/"+productId+"/"+productQuantity);
+
+        List<InlineKeyboardButton> row1 = List.of(buttonMinus, buttonQuantity, buttonPlus);
+        List<InlineKeyboardButton> row2 = List.of(button);
+
+        List<List<InlineKeyboardButton>> rowList = List.of(row1, row2);
+
+        return new InlineKeyboardMarkup(rowList);
+    }
+
+    public static InlineKeyboardMarkup getBasketMenu(String chatId) {
+
+        List<BasketDetail> basketDetailList = BasketDetailService.getBasket(chatId);
+
+        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+
+        for (BasketDetail basketDetail : basketDetailList) {
+            Product product = ProductService.getProductById(basketDetail.getProductId());
+
+            InlineKeyboardButton button = new InlineKeyboardButton(product.getName() + " ❌");
+            button.setCallbackData(InlineKeyboardConstants.PRODUCT_REMOVE_FROM_BASKET_DATA+"/"+product.getId());
+
+            rowList.add(List.of(button));
+        }
+
+        InlineKeyboardButton buttonClear = new InlineKeyboardButton(InlineKeyboardConstants.PRODUCT_CLEAN_BASKET_DEMO);
+        buttonClear.setCallbackData(InlineKeyboardConstants.PRODUCT_CLEAN_BASKET_DATA);
+
+        InlineKeyboardButton buttonBuy = new InlineKeyboardButton(InlineKeyboardConstants.PRODUCT_BUY_BASKET_DEMO);
+        buttonBuy.setCallbackData(InlineKeyboardConstants.PRODUCT_BUY_BASKET_DATA);
+
+        rowList.add(List.of(buttonClear, buttonBuy));
 
         return new InlineKeyboardMarkup(rowList);
     }

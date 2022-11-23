@@ -1,6 +1,9 @@
 package com.company.util;
 
 public interface InlineKeyboardConstants {
+
+    ////////////////////////////// ADMIN
+
     String CATEGORY_PDF_DEMO = "PDF";
     String CATEGORY_PDF_DATA = "_category_pdf_";
 
@@ -19,4 +22,21 @@ public interface InlineKeyboardConstants {
 
     String PRODUCT_CANCEL_DEMO = "No";
     String PRODUCT_CANCEL_DATA = "_cancel_add_product_";
+
+    ///////////////////////// USER
+
+    String CATEGORY_ORDER_DATA = "for_category_order_";
+    String PRODUCT_ORDER_DATA = "for_product_order_";
+
+    String PRODUCT_QUANTITY_DATA = "for_product_quantity_";
+    String PRODUCT_QUANTITY_BASKET_DATA = "for_product_to_basket_";
+    String PRODUCT_QUANTITY_BASKET_DEMO = "ADD TO BASKET";
+
+    String PRODUCT_REMOVE_FROM_BASKET_DATA = "for_product_remove_from_basket_";
+
+    String PRODUCT_CLEAN_BASKET_DATA = "for_clean_basket_";
+    String PRODUCT_CLEAN_BASKET_DEMO = "Clean basket ⚪";
+
+    String PRODUCT_BUY_BASKET_DATA = "for_buy_basket_";
+    String PRODUCT_BUY_BASKET_DEMO = "Buy products ✔";
 }

@@ -4,6 +4,10 @@ import com.company.db.Database;
 import com.company.entity.Category;
 import com.company.entity.Product;
 
+import javax.xml.crypto.Data;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class ProductService {
     public static String addProduct(Product product) {
 
@@ -14,5 +18,17 @@ public class ProductService {
         Database.PRODUCT_LIST.add(product);
 
         return product.getName()+" successfully added";
+    }
+
+    public static List<Product> getProductListByCategoryId(Integer categoryId) {
+        return Database.PRODUCT_LIST.stream()
+                .filter(product -> product.getCategoryId().equals(categoryId))
+                .collect(Collectors.toList());
+    }
+
+    public static Product getProductById(Integer productId) {
+        return Database.PRODUCT_LIST.stream()
+                .filter(product -> product.getId().equals(productId))
+                .findFirst().orElse(null);
     }
 }
