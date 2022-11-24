@@ -4,10 +4,13 @@ import com.company.container.ComponentContainer;
 import com.company.db.Database;
 import com.company.entity.Category;
 import com.company.entity.Customer;
+import com.company.entity.Order;
 import com.company.entity.Product;
 import com.company.enums.AdminStatus;
+import com.company.enums.OrderStatus;
 import com.company.files.WorkWithFiles;
 import com.company.service.CategoryService;
+import com.company.service.OrderService;
 import com.company.service.ProductService;
 import com.company.util.InlineKeyboardConstants;
 import com.company.util.InlineKeyboardUtil;
@@ -19,6 +22,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -38,7 +42,7 @@ public class AdminController {
             if (adminStatus.equals(AdminStatus.SHARE_ADVERT)) {
 
                 for (Customer customer : Database.CUSTOMER_LIST) {
-                    ForwardMessage forwardMessage = new ForwardMessage(customer.getChatId(),chatId, message.getMessageId());
+                    ForwardMessage forwardMessage = new ForwardMessage(customer.getChatId(), chatId, message.getMessageId());
                     forwardMessage.setProtectContent(true);
                     ComponentContainer.MY_BOT.sendMsg(forwardMessage);
                 }
@@ -290,98 +294,127 @@ public class AdminController {
         System.out.println("chatId = " + chatId);
         System.out.println("data = " + data);
 
-        DeleteMessage deleteMessage = new DeleteMessage(chatId, message.getMessageId());
-        ComponentContainer.MY_BOT.sendMsg(deleteMessage);
+        if (data.startsWith(InlineKeyboardConstants.ORDER_COMMIT_OR_CANCEL_DATA)) {
+            String[] split = data.split("/");
+            Integer orderId = Integer.valueOf(split[1]);
 
-        if (List.of(InlineKeyboardConstants.CATEGORY_PDF_DATA,
-                InlineKeyboardConstants.CATEGORY_WORD_DATA,
-                InlineKeyboardConstants.CATEGORY_EXCEL_DATA).contains(data)) {
+            Order order = OrderService.getOrderById(orderId);
+            SendMessage sendMessage = new SendMessage(order.getChatId(), "");
 
-            SendDocument sendDocument = new SendDocument();
-            sendDocument.setChatId(chatId);
+            String messageText = "";
 
-            File file = null;
-
-            if (data.equals(InlineKeyboardConstants.CATEGORY_PDF_DATA)) {
-                file = WorkWithFiles.getCategoriesWithPDF();
-            } else if (data.equals(InlineKeyboardConstants.CATEGORY_WORD_DATA)) {
-                // todo
-            } else if (data.equals(InlineKeyboardConstants.CATEGORY_EXCEL_DATA)) {
-                // todo
+            if (split[2].equals("true")) {
+                order.setStatus(OrderStatus.COMMITTED);
+                sendMessage.setText("Your order committed (order id: " + orderId + ")");
+                messageText = "Order committed (order id: " + orderId + ")";
+                // todo send to customer receipt PDF
+            } else {
+                order.setStatus(OrderStatus.CANCELED);
+                sendMessage.setText("Your order canceled (order id: " + orderId + ")");
+                messageText = "Order canceled (order id: " + orderId + ")";
             }
 
-            if (file != null) {
-                sendDocument.setDocument(new InputFile(file));
-                ComponentContainer.MY_BOT.sendMsg(sendDocument);
-            } else {
-                SendMessage sendMessage = new SendMessage(chatId, "Some exception");
+            ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            EditMessageText editMessageText = new EditMessageText(messageText);
+            editMessageText.setChatId(chatId);
+            editMessageText.setMessageId(message.getMessageId());
+            ComponentContainer.MY_BOT.sendMsg(editMessageText);
+        } else {
+
+            DeleteMessage deleteMessage = new DeleteMessage(chatId, message.getMessageId());
+            ComponentContainer.MY_BOT.sendMsg(deleteMessage);
+
+            if (List.of(InlineKeyboardConstants.CATEGORY_PDF_DATA,
+                    InlineKeyboardConstants.CATEGORY_WORD_DATA,
+                    InlineKeyboardConstants.CATEGORY_EXCEL_DATA).contains(data)) {
+
+                SendDocument sendDocument = new SendDocument();
+                sendDocument.setChatId(chatId);
+
+                File file = null;
+
+                if (data.equals(InlineKeyboardConstants.CATEGORY_PDF_DATA)) {
+                    file = WorkWithFiles.getCategoriesWithPDF();
+                } else if (data.equals(InlineKeyboardConstants.CATEGORY_WORD_DATA)) {
+                    // todo
+                } else if (data.equals(InlineKeyboardConstants.CATEGORY_EXCEL_DATA)) {
+                    // todo
+                }
+
+                if (file != null) {
+                    sendDocument.setDocument(new InputFile(file));
+                    ComponentContainer.MY_BOT.sendMsg(sendDocument);
+                } else {
+                    SendMessage sendMessage = new SendMessage(chatId, "Some exception");
+                    ComponentContainer.MY_BOT.sendMsg(sendMessage);
+                }
+
+            } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_DELETE_DATA)) {
+                Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+                boolean removeIf = Database.CATEGORY_LIST
+                        .removeIf(category -> category.getId().equals(categoryId));
+
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId);
+                sendMessage.setText(removeIf ? "Category deleted" : "Category not found");
                 ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_EDIT_DATA)) {
+                Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+                Optional<Category> categoryOptional = Database.CATEGORY_LIST.stream()
+                        .filter(category -> category.getId().equals(categoryId))
+                        .findFirst();
+
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId);
+
+                if (categoryOptional.isPresent()) {
+                    sendMessage.setText("Enter new name");
+                    sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
+
+                    ComponentContainer.adminObjectMap.put(chatId, categoryId);
+                    ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT);
+
+                } else {
+                    sendMessage.setText("Category not found");
+                }
+
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+            } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_ADD_PRODUCT_DATA)) {
+                Integer categoryId = Integer.parseInt(data.split("/")[1]);
+
+                Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                product.setCategoryId(categoryId);
+
+                System.out.println("product = " + product);
+
+                SendMessage sendMessage = new SendMessage(chatId, "Enter product name:");
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_NAME_FOR_ADD);
+            } else if (data.equals(InlineKeyboardConstants.PRODUCT_COMMIT_DATA)) {
+
+                Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
+                String response = ProductService.addProduct(product);
+
+                SendMessage sendMessage = new SendMessage(chatId, response);
+                sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                ComponentContainer.adminStatusMap.remove(chatId);
+                ComponentContainer.adminObjectMap.remove(chatId);
+
+            } else if (data.equals(InlineKeyboardConstants.PRODUCT_CANCEL_DATA)) {
+                SendMessage sendMessage = new SendMessage(chatId, "Operation canceled");
+                sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                ComponentContainer.adminStatusMap.remove(chatId);
+                ComponentContainer.adminObjectMap.remove(chatId);
             }
-
-        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_DELETE_DATA)) {
-            Integer categoryId = Integer.parseInt(data.split("/")[1]);
-
-            boolean removeIf = Database.CATEGORY_LIST
-                    .removeIf(category -> category.getId().equals(categoryId));
-
-            SendMessage sendMessage = new SendMessage();
-            sendMessage.setChatId(chatId);
-            sendMessage.setText(removeIf ? "Category deleted" : "Category not found");
-            ComponentContainer.MY_BOT.sendMsg(sendMessage);
-
-        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_EDIT_DATA)) {
-            Integer categoryId = Integer.parseInt(data.split("/")[1]);
-
-            Optional<Category> categoryOptional = Database.CATEGORY_LIST.stream()
-                    .filter(category -> category.getId().equals(categoryId))
-                    .findFirst();
-
-            SendMessage sendMessage = new SendMessage();
-            sendMessage.setChatId(chatId);
-
-            if (categoryOptional.isPresent()) {
-                sendMessage.setText("Enter new name");
-                sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
-
-                ComponentContainer.adminObjectMap.put(chatId, categoryId);
-                ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_CATEGORY_NAME_FOR_EDIT);
-
-            } else {
-                sendMessage.setText("Category not found");
-            }
-
-            ComponentContainer.MY_BOT.sendMsg(sendMessage);
-        } else if (data.startsWith(InlineKeyboardConstants.CATEGORY_ADD_PRODUCT_DATA)) {
-            Integer categoryId = Integer.parseInt(data.split("/")[1]);
-
-            Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
-            product.setCategoryId(categoryId);
-
-            System.out.println("product = " + product);
-
-            SendMessage sendMessage = new SendMessage(chatId, "Enter product name:");
-            ComponentContainer.MY_BOT.sendMsg(sendMessage);
-
-            ComponentContainer.adminStatusMap.put(chatId, AdminStatus.ENTER_PRODUCT_NAME_FOR_ADD);
-        } else if (data.equals(InlineKeyboardConstants.PRODUCT_COMMIT_DATA)) {
-
-            Product product = (Product) ComponentContainer.adminObjectMap.get(chatId);
-            String response = ProductService.addProduct(product);
-
-            SendMessage sendMessage = new SendMessage(chatId, response);
-            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
-            ComponentContainer.MY_BOT.sendMsg(sendMessage);
-
-            ComponentContainer.adminStatusMap.remove(chatId);
-            ComponentContainer.adminObjectMap.remove(chatId);
-
-        } else if (data.equals(InlineKeyboardConstants.PRODUCT_CANCEL_DATA)) {
-            SendMessage sendMessage = new SendMessage(chatId, "Operation canceled");
-            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getProductCRUDMenu());
-            ComponentContainer.MY_BOT.sendMsg(sendMessage);
-
-            ComponentContainer.adminStatusMap.remove(chatId);
-            ComponentContainer.adminObjectMap.remove(chatId);
         }
 
     }

@@ -87,4 +87,11 @@ public class ReplyKeyboardUtil {
                 )
         ));
     }
+
+    public static ReplyKeyboard getContactMenu() {
+        KeyboardButton button = getButton(ReplyKeyboardConstants.SEND_CONTACT);
+        button.setRequestContact(true);
+
+        return getMarkup(getRowList(getRow(button)));
+    }
 }

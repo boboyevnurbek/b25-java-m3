@@ -2,8 +2,9 @@ package com.company.controller;
 
 import com.company.container.ComponentContainer;
 import com.company.db.Database;
-import com.company.entity.BasketDetail;
-import com.company.entity.Product;
+import com.company.entity.*;
+import com.company.enums.AdminStatus;
+import com.company.enums.UserStatus;
 import com.company.service.BasketDetailService;
 import com.company.service.CustomerService;
 import com.company.service.ProductService;
@@ -67,6 +68,70 @@ public class MainController {
         String chatId = String.valueOf(message.getChatId());
         Contact contact = message.getContact();
 
+        if(ComponentContainer.userStatusMap.containsKey(chatId)){
+            UserStatus userStatus = ComponentContainer.userStatusMap.get(chatId);
+
+            if(userStatus.equals(UserStatus.SEND_CONTACT)){
+                Customer customer = CustomerService.getCustomerByChatId(chatId);
+                customer.setFirstName(contact.getFirstName());
+                customer.setLastName(contact.getLastName());
+                customer.setPhoneNumber(contact.getPhoneNumber());
+
+                Integer orderId = sendNotificationToAdminByNewOrder(customer);
+
+                Database.BASKET_DETAIL_LIST.removeIf(basketDetail -> basketDetail.getChatId().equals(chatId));
+
+                SendMessage sendMessage = new SendMessage(chatId, "Our managers will contact with you\n"+
+                        "Your current order id: "+orderId);
+                sendMessage.setReplyMarkup(ReplyKeyboardUtil.getUserMenu());
+                ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+                ComponentContainer.userStatusMap.remove(chatId);
+            }
+        }
+    }
+
+    private static Integer sendNotificationToAdminByNewOrder(Customer customer) {
+
+        StringBuilder sb = new StringBuilder("New order\n\n");
+
+        sb.append("Customer: ").append(customer.getFirstName()).append(" ")
+                                .append(customer.getLastName()).append("\n");
+        sb.append("Phone number: ").append(customer.getPhoneNumber()).append("\n");
+        sb.append("Chat id: ").append(customer.getChatId()).append("\n\n");
+
+        Order order = new Order(Database.ORDER_LIST.size() + 1, customer.getChatId());
+
+        List<BasketDetail> basketDetailList = BasketDetailService.getBasket(customer.getChatId());
+
+        double total = 0;
+
+        for (BasketDetail basketDetail : basketDetailList) {
+
+            OrderDetail orderDetail = new OrderDetail(
+                    order.getId(), basketDetail.getProductId(), basketDetail.getQuantity());
+
+            Database.ORDER_DETAIL_LIST.add(orderDetail);
+
+            Product product = ProductService.getProductById(basketDetail.getProductId());
+
+            total += basketDetail.getQuantity()*product.getPrice();
+
+            sb.append(product.getName()).append(" x ").append(basketDetail.getQuantity())
+                    .append(" = ").append(basketDetail.getQuantity()*product.getPrice()).append("\n\n");
+        }
+
+        sb.append("Total price:     ").append(total);
+
+        order.setTotalPrice(total);
+
+        Database.ORDER_LIST.add(order);
+
+        SendMessage sendMessage = new SendMessage(ComponentContainer.ADMIN_CHAT_ID, sb.toString());
+        sendMessage.setReplyMarkup(InlineKeyboardUtil.getConfirmOrCancelOrderMenu(order.getId()));
+        ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+        return order.getId();
     }
 
     private static void handleText(Message message) {
@@ -253,17 +318,14 @@ public class MainController {
             showBasket(chatId);
         }else if(data.equals(InlineKeyboardConstants.PRODUCT_BUY_BASKET_DATA)){
 
-            // todo: get contact, send message to admin about order with buttons (confirm order, cancel order)
-
-            Database.BASKET_DETAIL_LIST.removeIf(basketDetail -> basketDetail.getChatId().equals(chatId));
-
             DeleteMessage deleteMessage = new DeleteMessage(chatId, message.getMessageId());
             ComponentContainer.MY_BOT.sendMsg(deleteMessage);
 
-            showBasket(chatId);
-
-            SendMessage sendMessage = new SendMessage(chatId, "Our managers will contact with you");
+            SendMessage sendMessage = new SendMessage(chatId, "Send your contact");
+            sendMessage.setReplyMarkup(ReplyKeyboardUtil.getContactMenu());
             ComponentContainer.MY_BOT.sendMsg(sendMessage);
+
+            ComponentContainer.userStatusMap.put(chatId, UserStatus.SEND_CONTACT);
         }
     }
 }

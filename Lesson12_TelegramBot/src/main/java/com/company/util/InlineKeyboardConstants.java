@@ -39,4 +39,8 @@ public interface InlineKeyboardConstants {
 
     String PRODUCT_BUY_BASKET_DATA = "for_buy_basket_";
     String PRODUCT_BUY_BASKET_DEMO = "Buy products ✔";
+
+    String ORDER_COMMIT_DEMO = "Commit";
+    String ORDER_CANCEL_DEMO = "Cancel";
+    String ORDER_COMMIT_OR_CANCEL_DATA = "_commit_or_cancel_order_";
 }

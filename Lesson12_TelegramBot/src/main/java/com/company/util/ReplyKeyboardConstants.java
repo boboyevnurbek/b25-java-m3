@@ -20,4 +20,7 @@ public interface ReplyKeyboardConstants {
     String BASKET_DEMO = "MY BASKET";
     String MY_ORDERS_DEMO = "MY ORDERS";
     String CONTACT_WITH_ADMIN = "CONTACT WITH ADMIN";
+
+
+    String SEND_CONTACT = "SEND CONTACT";
 }

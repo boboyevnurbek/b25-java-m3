@@ -1,9 +1,6 @@
 package com.company.db;
 
-import com.company.entity.BasketDetail;
-import com.company.entity.Category;
-import com.company.entity.Customer;
-import com.company.entity.Product;
+import com.company.entity.*;
 import com.company.service.CategoryService;
 import com.company.service.CustomerService;
 import com.company.service.ProductService;
@@ -16,6 +13,8 @@ public interface Database {
     List<Product> PRODUCT_LIST = new ArrayList<>();
     List<Customer> CUSTOMER_LIST = new ArrayList<>();
     List<BasketDetail> BASKET_DETAIL_LIST = new ArrayList<>();
+    List<Order> ORDER_LIST = new ArrayList<>();
+    List<OrderDetail> ORDER_DETAIL_LIST = new ArrayList<>();
 
     static void loadData(){
         CategoryService.addCategory("Tv");

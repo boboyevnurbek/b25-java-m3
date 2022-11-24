@@ -117,4 +117,18 @@ public class InlineKeyboardUtil {
 
         return new InlineKeyboardMarkup(rowList);
     }
+
+    public static InlineKeyboardMarkup getConfirmOrCancelOrderMenu(Integer orderId) {
+        InlineKeyboardButton buttonCommit = new InlineKeyboardButton(InlineKeyboardConstants.ORDER_COMMIT_DEMO);
+        buttonCommit.setCallbackData(InlineKeyboardConstants.ORDER_COMMIT_OR_CANCEL_DATA+"/"+orderId+"/true");
+
+        InlineKeyboardButton buttonCancel = new InlineKeyboardButton(InlineKeyboardConstants.ORDER_CANCEL_DEMO);
+        buttonCancel.setCallbackData(InlineKeyboardConstants.ORDER_COMMIT_OR_CANCEL_DATA+"/"+orderId+"/false");
+
+        List<InlineKeyboardButton> row1 = List.of(buttonCommit, buttonCancel);
+
+        List<List<InlineKeyboardButton>> rowList = List.of(row1);
+
+        return new InlineKeyboardMarkup(rowList);
+    }
 }
