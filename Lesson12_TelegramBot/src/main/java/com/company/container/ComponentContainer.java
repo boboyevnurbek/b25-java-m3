@@ -11,7 +11,7 @@ import java.util.Map;
 public interface ComponentContainer {
     String BOT_TOKEN = "";
     String BOT_USERNAME = "";
-    String ADMIN_CHAT_ID = "616525392";
+    String ADMIN_CHAT_ID = "616525392ABC";
     MyBot MY_BOT = new MyBot();
 
     // chat id, admin status

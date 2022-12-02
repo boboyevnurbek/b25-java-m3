@@ -9,7 +9,7 @@ public class App1 {
         List<Integer> list = new ArrayList<>(List.of(10, 23, 3, 7, -4, 7, 10, 8));
         System.out.println("list = " + list);
 
-        // declarative method
+        // imperative method
         List<Integer> list1 = new ArrayList<>();
         for (Integer number : list) {
             if(number%2==0){
@@ -18,7 +18,7 @@ public class App1 {
         }
         System.out.println("list1 = " + list1);
 
-        // imperative method
+        // declarative method
         List<Integer> list2 = list.stream()
                 .filter(number -> number % 2 == 0)
                 .toList();
